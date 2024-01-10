@@ -26,19 +26,36 @@ def get_log_file_names(logs_dir):
 def extract_timestamp(s):
     return datetime.datetime.fromisoformat(s[:26])
 
+known_codeql_commands = [
+    "database unbundle",
+    "database run-queries",
+    "bqrs info",
+    "resolve queries",
+    "resolve metadata",
+    "resolve database",
+    "bqrs interpret"
+]
+
+def extract_codeql_command(l):
+    for c in known_codeql_commands:
+        if f"codeql/codeql {c}" in l:
+            return c
+    raise Exception(f"Unable to extract codeql command from {l}")
+
 def get_timing_info(log_file):
     num_repos = 0
     setup_time_s = 0
     repo_time_s = 0
     download_time_s = 0
-    query_time_s = 0
+    codeql_command_times_s = {}
+    for c in known_codeql_commands:
+        codeql_command_times_s[c] = 0
 
     starting_job = None
     starting_repo = None
-    ending_repo = None
-    job_ended = None
-
-    eval_regex = "\[1/1 eval ([\d\.]+)s\] Evaluation done; writing results to.*"
+    starting_download = None
+    starting_command = None
+    current_command = None
 
     with open(log_file) as f:
         lines = f.readlines()
@@ -55,42 +72,48 @@ def get_timing_info(log_file):
                     setup_time_s += (t - starting_job).total_seconds()
                     starting_job = None
 
-                if starting_repo is not None:
-                    raise Exception("Unable to find end of repo")
+                if starting_repo is None:
+                    starting_repo = t
+                
+                if current_command is not None and starting_command is not None:
+                    codeql_command_times_s[current_command] += (t - starting_command).total_seconds()
+                    current_command = None
+                    starting_command = None
 
-                starting_repo = t
-            
-            elif l == "Running query\n":
-                if starting_repo is None:
-                    raise Exception("Unable to find start of repo")
-                
-                download_time_s += (extract_timestamp(line) - starting_repo).total_seconds()
-            
-            elif re.match(eval_regex, l):
-                query_time_s += float(re.match(eval_regex, l).group(1))
-            
-            elif l.startswith("[command]/opt/hostedtoolcache/CodeQL/2.15.5/x64/codeql/codeql bqrs interpret"):
-                if starting_repo is None:
-                    raise Exception("Unable to find start of repo")
-                
+                starting_download = t
                 num_repos += 1
+            
+            elif l.startswith("[command]/opt/hostedtoolcache/CodeQL/"):
                 t = extract_timestamp(line)
+
+                if starting_download is not None:
+                    download_time_s += (t - starting_download).total_seconds()
+                    starting_download = None
+                
+                if current_command is not None and starting_command is not None:
+                    codeql_command_times_s[current_command] += (t - starting_command).total_seconds()
+                    current_command = None
+                    starting_command = None
+            
+                current_command = extract_codeql_command(l)
+                starting_command = t
+
+            elif l == "##[debug]Finishing: Run query\n":
+                t = extract_timestamp(line)
+
+                if current_command is not None and starting_command is not None:
+                    codeql_command_times_s[current_command] += (t - starting_command).total_seconds()
+                    current_command = None
+                    starting_command = None
+
                 repo_time_s += (t - starting_repo).total_seconds()
-                starting_repo = None
-                ending_repo = t
-
-            elif l == "##[debug]Finishing: Complete job\n":
-                job_ended = extract_timestamp(line)
-
-                if ending_repo is None:
-                    raise Exception("Unable to find end of repo")
-                setup_time_s += (job_ended - ending_repo).total_seconds()
-
     
-    if job_ended is None:
-        raise Exception("Unable to find end of job")
+    if num_repos == 0:
+        raise Exception(f"Unable to find any repos in {log_file}")
+    if repo_time_s == 0:
+        raise Exception(f"Unable to find any repo time in {log_file}")
 
-    return num_repos, setup_time_s, repo_time_s, download_time_s, query_time_s
+    return num_repos, setup_time_s, repo_time_s, download_time_s, codeql_command_times_s
 
 def main():
     if len(sys.argv) != 3:
@@ -109,20 +132,32 @@ def main():
     setup_time_s = 0
     repo_time_s = 0
     download_time_s = 0
-    query_time_s = 0
+    codeql_command_times_s = {}
+    for c in known_codeql_commands:
+        codeql_command_times_s[c] = 0
+
     for log_file in log_files:
-        n, s, r, d, q = get_timing_info(log_file)
+        n, s, r, d, cs = get_timing_info(log_file)
         num_repos += n
         setup_time_s += s
         repo_time_s += r
         download_time_s += d
-        query_time_s += q
+        for c in known_codeql_commands:
+            codeql_command_times_s[c] += cs[c]
+            
+    longest_command = max([len(c) for c in known_codeql_commands]) + len('CodeQL command: ') + 1
     
     print(f"Number of repos: {num_repos}")
-    print(f"Setup time: {setup_time_s}s, {setup_time_s / num_repos}s per repo")
-    print(f"Repo time: {repo_time_s}s, {repo_time_s / num_repos}s per repo")
-    print(f"    Download time: {download_time_s}s, {download_time_s / num_repos}s per repo")
-    print(f"    Query time: {query_time_s}s, {query_time_s / num_repos}s per repo")
+    print(f"Setup time: {(str(round(setup_time_s, 2)) + 's').ljust(12)}, {(str(round(setup_time_s / num_repos, 2)) + 's per repo').ljust(20)}")
+    print(f"Repo time: {(str(round(repo_time_s, 2)) + 's').ljust(12)}, {(str(round(repo_time_s / num_repos, 2)) + 's per repo').ljust(20)}")
+    print(f"    {'Download time'.ljust(longest_command)}: {(str(round(download_time_s, 2)) + 's').ljust(12)}, {(str(round(download_time_s / num_repos, 2)) + 's per repo').ljust(20)}, {round(100.0 * download_time_s / repo_time_s, 2)}% of total repo time")
+    for c in known_codeql_commands:
+        print(f"    {('CodeQL command: ' + c).ljust(longest_command)}: {(str(round(codeql_command_times_s[c], 2)) + 's').ljust(12)}, {(str(round(codeql_command_times_s[c] / num_repos, 2)) + 's per repo').ljust(20)}, {round(100.0 * codeql_command_times_s[c] / repo_time_s, 2)}% of total repo time")
+
+    accounted_repo_time = 0
+    for c in known_codeql_commands:
+        accounted_repo_time += codeql_command_times_s[c]
+    print(f"    Repo time account for: {round(100.0 * accounted_repo_time / repo_time_s, 2)}%")
 
 if __name__ == "__main__":
     main()
