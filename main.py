@@ -4,6 +4,7 @@ import datetime
 import os
 import re
 import sys
+import json
 
 # To download log files:
 # > gh api repos/{repo_name}/actions/runs/{run_id}/logs > logs.zip
@@ -171,6 +172,23 @@ def main():
     for c in known_codeql_commands:
         accounted_repo_time += codeql_command_times_s[c]
     print(f"    Repo time account for: {round(100.0 * accounted_repo_time / repo_time_s, 2)}%")
+
+    # Stats of how long each repo took
+    # print()
+    # print("Breakdown per repo:")
+    # repo_times.sort(key=lambda x: x[1])
+    # for repo in repo_times:
+    #     print(f"{repo[0].ljust(60)} \t {str(round(repo[1], 2))}")
+
+    # Stats of how long each job took
+    # print()
+    # print("Breakdown per job:")
+    # job_times.sort()
+    # for job in job_times:
+    #     print(f"{str(round(job, 2))}")
+
+    # Just dump all repo data
+    # print(json.dumps([r[1] for r in repo_times]))
 
 if __name__ == "__main__":
     main()
