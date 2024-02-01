@@ -34,8 +34,7 @@ known_codeql_commands = [
     "bqrs info",
     "resolve queries",
     "resolve metadata",
-    "resolve database",
-    "bqrs interpret"
+    "resolve database"
 ]
 
 def extract_codeql_command(l):
