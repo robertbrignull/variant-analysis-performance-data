@@ -29,6 +29,7 @@ def extract_timestamp(s):
 known_codeql_commands = [
     "database unbundle",
     "database run-queries",
+    "database interpret-results",
     "bqrs info",
     "resolve queries",
     "resolve metadata",
