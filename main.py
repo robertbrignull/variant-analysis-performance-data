@@ -76,8 +76,8 @@ def get_timing_info(log_file):
                     repo_times.append((current_repo, (t - starting_repo).total_seconds()))
                 current_repo = l[len("Getting database for "):].strip()
 
-                if starting_job is not None:
-                    setup_time_s += (t - starting_job).total_seconds()
+                if setup_time_s == 0:
+                    setup_time_s = (t - starting_job).total_seconds()
 
                 if starting_repo is None:
                     starting_repo = t
