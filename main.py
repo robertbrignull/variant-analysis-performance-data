@@ -39,7 +39,7 @@ known_codeql_commands = [
 
 def extract_codeql_command(l):
     for c in known_codeql_commands:
-        if f"codeql/codeql {c}" in l:
+        if f"codeql/codeql {c}" in l or f"Running using CodeQL CLI: {c}" in l:
             return c
     raise Exception(f"Unable to extract codeql command from {l}")
 
@@ -90,7 +90,7 @@ def get_timing_info(log_file):
                 starting_download = t
                 num_repos += 1
             
-            elif l.startswith("[command]/opt/hostedtoolcache/CodeQL/"):
+            elif l.startswith("[command]/opt/hostedtoolcache/CodeQL/") or l.startswith("##[debug]Running using CodeQL CLI:"):
                 t = extract_timestamp(line)
 
                 if starting_download is not None:
