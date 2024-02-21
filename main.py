@@ -169,11 +169,6 @@ def main():
     for c in known_codeql_commands:
         print(f"    {('CodeQL command: ' + c).ljust(longest_command)}: {(str(round(codeql_command_times_s[c], 2)) + 's').ljust(12)}, {(str(round(codeql_command_times_s[c] / num_repos, 2)) + 's per repo').ljust(20)}, {round(100.0 * codeql_command_times_s[c] / repo_time_s, 2)}% of total repo time")
 
-    accounted_repo_time = 0
-    for c in known_codeql_commands:
-        accounted_repo_time += codeql_command_times_s[c]
-    print(f"    Repo time accounted for: {round(accounted_repo_time, 2)}, {round(100.0 * accounted_repo_time / repo_time_s, 2)}%")
-
     # Stats of how long each repo took
     # print()
     # print("Breakdown per repo:")
