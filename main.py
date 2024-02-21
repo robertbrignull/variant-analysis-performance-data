@@ -170,7 +170,7 @@ def main():
     accounted_repo_time = 0
     for c in known_codeql_commands:
         accounted_repo_time += codeql_command_times_s[c]
-    print(f"    Repo time accounted for: {round(100.0 * accounted_repo_time / repo_time_s, 2)}%")
+    print(f"    Repo time accounted for: {round(accounted_repo_time, 2)}, {round(100.0 * accounted_repo_time / repo_time_s, 2)}%")
 
     # Stats of how long each repo took
     # print()
