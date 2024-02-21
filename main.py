@@ -145,6 +145,7 @@ def main():
     for c in known_codeql_commands:
         codeql_command_times_s[c] = 0
     repo_times = []
+    job_time_s = 0
     job_times = []
 
     for log_file in log_files:
@@ -155,12 +156,14 @@ def main():
         download_time_s += d
         for c in known_codeql_commands:
             codeql_command_times_s[c] += cs[c]
+        job_time_s += jt
         job_times.append(jt)
         repo_times += rt
             
     longest_command = max([len(c) for c in known_codeql_commands]) + len('CodeQL command: ') + 1
     
     print(f"Number of repos: {num_repos}")
+    print(f"Total time: {str(round(job_time_s, 2)) + 's'}")
     print(f"Setup time: {(str(round(setup_time_s, 2)) + 's').ljust(12)}, {(str(round(setup_time_s / num_repos, 2)) + 's per repo').ljust(20)}")
     print(f"Repo time:  {(str(round(repo_time_s, 2)) + 's').ljust(12)}, {(str(round(repo_time_s / num_repos, 2)) + 's per repo').ljust(20)}")
     print(f"    {'Download time'.ljust(longest_command)}: {(str(round(download_time_s, 2)) + 's').ljust(12)}, {(str(round(download_time_s / num_repos, 2)) + 's per repo').ljust(20)}, {round(100.0 * download_time_s / repo_time_s, 2)}% of total repo time")
