@@ -73,14 +73,13 @@ def get_timing_info(log_file):
                 t = extract_timestamp(line)
 
                 if current_repo is not None and starting_repo is not None:
+                    repo_time_s += (t - starting_repo).total_seconds()
                     repo_times.append((current_repo, (t - starting_repo).total_seconds()))
                 current_repo = l[len("Getting database for "):].strip()
+                starting_repo = t
 
                 if setup_time_s == 0:
                     setup_time_s = (t - starting_job).total_seconds()
-
-                if starting_repo is None:
-                    starting_repo = t
 
                 if current_command is not None and starting_command is not None:
                     codeql_command_times_s[current_command] += (t - starting_command).total_seconds()
