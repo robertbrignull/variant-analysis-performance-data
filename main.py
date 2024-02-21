@@ -165,9 +165,9 @@ def main():
     print(f"Total time: {str(round(job_time_s, 2)) + 's'}")
     print(f"Setup time: {(str(round(setup_time_s, 2)) + 's').ljust(12)}, {(str(round(setup_time_s / num_repos, 2)) + 's per repo').ljust(20)}")
     print(f"Repo time:  {(str(round(repo_time_s, 2)) + 's').ljust(12)}, {(str(round(repo_time_s / num_repos, 2)) + 's per repo').ljust(20)}")
-    print(f"    {'Download time'.ljust(longest_command)}: {(str(round(download_time_s, 2)) + 's').ljust(12)}, {(str(round(download_time_s / num_repos, 2)) + 's per repo').ljust(20)}, {round(100.0 * download_time_s / repo_time_s, 2)}% of total repo time")
+    print(f"    {'Download time'.ljust(longest_command)}: {(str(round(download_time_s, 2)) + 's').ljust(12)}, {(str(round(download_time_s / num_repos, 2)) + 's per repo').ljust(20)}, {round(100.0 * download_time_s / job_time_s, 2)}% of total time")
     for c in known_codeql_commands:
-        print(f"    {('CodeQL command: ' + c).ljust(longest_command)}: {(str(round(codeql_command_times_s[c], 2)) + 's').ljust(12)}, {(str(round(codeql_command_times_s[c] / num_repos, 2)) + 's per repo').ljust(20)}, {round(100.0 * codeql_command_times_s[c] / repo_time_s, 2)}% of total repo time")
+        print(f"    {('CodeQL command: ' + c).ljust(longest_command)}: {(str(round(codeql_command_times_s[c], 2)) + 's').ljust(12)}, {(str(round(codeql_command_times_s[c] / num_repos, 2)) + 's per repo').ljust(20)}, {round(100.0 * codeql_command_times_s[c] / job_time_s, 2)}% of total time")
 
     # Stats of how long each repo took
     # print()
